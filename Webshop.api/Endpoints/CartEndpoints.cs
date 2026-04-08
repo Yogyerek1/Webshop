@@ -4,7 +4,7 @@ namespace Webshop.api.Endpoints;
 
 public static class CartEndpoints
 {
-    public static void MapCartEndpoints(this WebApplication app)
+    public static void MapCartEndpoints(this IEndpointRouteBuilder app)
     {
         app.MapGet("/cart", () => {});
         app.MapPost("/cart/items", () => {});

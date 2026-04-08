@@ -4,7 +4,7 @@ namespace Webshop.api.Endpoints;
 
 public static class ProductsEndpoints
 {
-    public static void MapProductsEndpoints(this WebApplication app)
+    public static void MapProductsEndpoints(this IEndpointRouteBuilder app)
     {
         app.MapGet("/products", () => {});
         app.MapGet("/products/{id}", (int id) => {});

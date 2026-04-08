@@ -1,9 +1,10 @@
 using System;
 using Microsoft.VisualBasic;
+using Webshop.api.Models;
 
 namespace Webshop.api.Services;
 
-public class AuthService
+public class AuthService(AppDbContext db)
 {
     public void Register() {}
     public void Login() {}

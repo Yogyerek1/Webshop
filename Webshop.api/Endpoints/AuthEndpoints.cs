@@ -6,11 +6,10 @@ namespace Webshop.api.Endpoints;
 
 public static class AuthEndpoints
 {
-    public static void MapAuthEndpoints(this WebApplication app)
+    public static void MapAuthEndpoints(this IEndpointRouteBuilder app)
     {
-        AuthService authService = new AuthService();
-        app.MapPost("/auth/register", () => authService.Register());
-        app.MapPost("/auth/login", () => authService.Login());
-        app.MapGet("/auth/profile", () => authService.Profile());
+        app.MapPost("/auth/register", (AuthService authService) => authService.Register());
+        app.MapPost("/auth/login", (AuthService authService) => authService.Login());
+        app.MapGet("/auth/profile", (AuthService authService) => authService.Profile());
     }
 }
