@@ -1,5 +1,3 @@
-using System;
-using System.Runtime.CompilerServices;
 using Webshop.api.Services;
 
 namespace Webshop.api.Endpoints;

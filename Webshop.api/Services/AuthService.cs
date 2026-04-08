@@ -1,5 +1,3 @@
-using System;
-using Microsoft.VisualBasic;
 using Webshop.api.Models;
 
 namespace Webshop.api.Services;
