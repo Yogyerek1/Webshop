@@ -12,7 +12,7 @@ using Webshop.api.Models;
 namespace Webshop.api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260408135741_InitialCreate")]
+    [Migration("20260409131054_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -125,10 +125,16 @@ namespace Webshop.api.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<DateTime?>("CodeExpiry")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
+
+                    b.Property<bool>("IsVerified")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Password")
                         .IsRequired()
@@ -142,6 +148,10 @@ namespace Webshop.api.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
+
+                    b.Property<string>("VerifyCode")
+                        .HasMaxLength(6)
+                        .HasColumnType("character varying(6)");
 
                     b.HasKey("Id");
 
