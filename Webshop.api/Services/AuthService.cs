@@ -54,6 +54,22 @@ public class AuthService(AppDbContext db, IConfiguration config, IHttpContextAcc
         return Results.Ok("Please, check your email. The verification has been sent.");
     }
 
+    public async Task<IResult> Me()
+    {
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == int.Parse(Context.User.FindFirst(ClaimTypes.NameIdentifier)!.Value));
+        if (user is null) return Results.Unauthorized();
+
+        return Results.Ok(
+            new
+            {
+                user.Id,
+                user.Username,
+                user.Email,
+                user.Role
+            }
+        );
+    }
+
     public IResult Logout()
     {
         Context.Response.Cookies.Delete("access_token");
