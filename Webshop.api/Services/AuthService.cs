@@ -22,8 +22,14 @@ public class AuthService(AppDbContext db)
         db.Users.Add(user);
         await db.SaveChangesAsync();
 
-        return Results.Created($"/auth/profile", new { user.Id, user.Username, user.Email, user.Role });
+        return Results.Created($"/auth/profile", new { user.Id, user.Username, user.Email });
     }
-    public void Login(LoginDto dto) {}
-    public void Profile() {}
+    public async Task<IResult> Login(LoginDto dto)
+    {
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+
+        if (user is null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.Password)) return Results.Unauthorized();
+
+        return Results.Ok(new { user.Id, user.Username, user.Email, user.Role });
+    }
 }
