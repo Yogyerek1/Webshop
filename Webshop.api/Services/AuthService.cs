@@ -17,7 +17,6 @@ public class AuthService(AppDbContext db, IConfiguration config, IHttpContextAcc
         var code = new Random().Next(100000, 999999).ToString();
         user.VerifyCode = code;
         user.CodeExpiry = DateTime.UtcNow.AddMinutes(minutes);
-        await db.SaveChangesAsync();
 
         return code;
     }
@@ -38,6 +37,8 @@ public class AuthService(AppDbContext db, IConfiguration config, IHttpContextAcc
         db.Users.Add(user);
         string code = await SendCode(user, 10);
 
+        await db.SaveChangesAsync();
+
         // email code
         Console.WriteLine($"[REGISTRATION -> ACCOUNT VERIFICATION] Email sent to ({dto.Email}): {code}.");
 
@@ -51,6 +52,8 @@ public class AuthService(AppDbContext db, IConfiguration config, IHttpContextAcc
         if (user is null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.Password)) return Results.Unauthorized();
 
         string code = await SendCode(user, 5);
+
+        await db.SaveChangesAsync();
 
         Console.WriteLine($"[LOGIN -> Verification] Email has been sent to ({user.Email}): {code}.");
         return Results.Ok("Please, check your email. The verification has been sent.");
@@ -67,7 +70,8 @@ public class AuthService(AppDbContext db, IConfiguration config, IHttpContextAcc
                 user.Id,
                 user.Username,
                 user.Email,
-                user.Role
+                user.Role,
+                user.VerifyCode
             }
         );
     }
@@ -79,6 +83,8 @@ public class AuthService(AppDbContext db, IConfiguration config, IHttpContextAcc
         if (user is null) return Results.Ok("If this email exists, a reset code has been sent.");
 
         string code = await SendCode(user, 10);
+
+        await db.SaveChangesAsync();
 
         Console.WriteLine($"[PASSWORD RESET -> VERIFICATION] Email sent to ({user.Email}): {code}.");
 
@@ -109,6 +115,9 @@ public class AuthService(AppDbContext db, IConfiguration config, IHttpContextAcc
         if (user is null) return Results.NotFound("User not found.");
 
         string code = await SendCode(user, 5);
+
+        await db.SaveChangesAsync();
+
         Console.WriteLine($"[UPDATE PROFILE -> VERIFICATION] Code sent to ({user.Email}): {code}.");
 
         return Results.Ok("Verification code sent to your email.");
