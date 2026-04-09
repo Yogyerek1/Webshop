@@ -20,6 +20,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         $"Password={config["DB_PASSWORD"]};"
     ));
 
+builder.Services.AddValidation();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
