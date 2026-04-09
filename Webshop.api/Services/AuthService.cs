@@ -8,8 +8,9 @@ using Webshop.api.Models;
 
 namespace Webshop.api.Services;
 
-public class AuthService(AppDbContext db, IConfiguration config)
+public class AuthService(AppDbContext db, IConfiguration config, IHttpContextAccessor httpContextAccessor)
 {
+    private HttpContext Context => httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext is not available!");
     public async Task<IResult> Register(RegisterDto dto)
     {
         var exists = await db.Users.AnyAsync(u => u.Email == dto.Email);
@@ -32,7 +33,7 @@ public class AuthService(AppDbContext db, IConfiguration config)
         await db.SaveChangesAsync();
 
         // email code
-        Console.WriteLine($"Email sent to ({dto.Email}): {code}!");
+        Console.WriteLine($"[REGISTRATION -> ACCOUNT VERIFICATION] Email sent to ({dto.Email}): {code}!");
 
         return Results.Ok("Registration successfully! Please, check your email to verificate your account!");
     }
@@ -43,10 +44,20 @@ public class AuthService(AppDbContext db, IConfiguration config)
 
         if (user is null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.Password)) return Results.Unauthorized();
 
-        if (!user.IsVerified) return Results.BadRequest("The account is not verified!");
+        var code = new Random().Next(100000, 999999).ToString();
+        user.VerifyCode = code;
+        user.CodeExpiry = DateTime.UtcNow.AddMinutes(5);
 
-        var token = GenerateJwtToken(user);
-        return Results.Ok(new { user.Id, user.Username, user.Email, user.Role, Token = token });
+        await db.SaveChangesAsync();
+
+        Console.WriteLine($"[LOGIN 2FA] Email has been sent: {user.Email} - Code: {code}");
+        return Results.Ok("Please, check your email. The verification has been sent.");
+    }
+
+    public IResult Logout()
+    {
+        Context.Response.Cookies.Delete("access_token");
+        return Results.Ok("Logged out successfully!");
     }
 
     public async Task<IResult> VerifyCode(VerifyDto dto)
@@ -57,15 +68,40 @@ public class AuthService(AppDbContext db, IConfiguration config)
         if (user.VerifyCode != dto.Code) return Results.BadRequest("Wrong code!");
         if (user.CodeExpiry < DateTime.UtcNow) return Results.BadRequest("The code is expired!");
 
-        user.IsVerified = true;
+        object responseMessage;
+
+        if (!user.IsVerified)
+        {
+            // register verification
+            user.IsVerified = true;
+            responseMessage = new { Message = "Successfully account verification!" };
+        }
+        else
+        {
+            // login verification
+            responseMessage = new
+            {
+                Message = "Successfully logged in!",
+                User = new
+                {
+                    user.Id,
+                    user.Username,
+                    user.Email,
+                    user.Role
+                }
+            };
+        }
+
         user.VerifyCode = null;
         user.CodeExpiry = null;
         await db.SaveChangesAsync();
 
-        return Results.Ok(new { Message = "Successfully verification!" });
+        GenerateJwtToken(user);
+
+        return Results.Ok(responseMessage);
     }
 
-    private string GenerateJwtToken(User user)
+    private void GenerateJwtToken(User user)
     {
         var jwtSecret = config["JWT_SECRET"] ?? throw new InvalidOperationException("JWT_SECRET not configured!");
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret));
@@ -85,6 +121,12 @@ public class AuthService(AppDbContext db, IConfiguration config)
             signingCredentials: creds
         );
 
-        return new JwtSecurityTokenHandler().WriteToken(token);
+        Context.Response.Cookies.Append("access_token", new JwtSecurityTokenHandler().WriteToken(token), new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Strict,
+            Expires = DateTime.UtcNow.AddDays(7)
+        });
     }
 }

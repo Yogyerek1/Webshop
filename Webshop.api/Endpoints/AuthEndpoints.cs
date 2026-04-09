@@ -10,5 +10,6 @@ public static class AuthEndpoints
         app.MapPost("/auth/register", async (RegisterDto dto, AuthService authService) => await authService.Register(dto));
         app.MapPost("/auth/login", async (LoginDto dto, AuthService authService) => await authService.Login(dto));
         app.MapPost("/auth/verify", async (VerifyDto dto, AuthService authService) => await authService.VerifyCode(dto));
+        app.MapGet("/auth/logout", (AuthService authService) => authService.Logout());
     }
 }
