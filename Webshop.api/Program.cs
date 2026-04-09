@@ -1,5 +1,7 @@
+using System.Text;
 using dotenv.net;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Webshop.api.Endpoints;
 using Webshop.api.Models;
 using Webshop.api.Services;
@@ -8,9 +10,25 @@ DotEnv.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
+var config = builder.Configuration;
+
+// JWT authentication
+builder.Services.AddAuthentication()
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(config["JWT_SECRET"] ?? 
+                throw new InvalidOperationException("JWT_SECRET not configured!"))),
+            ValidateIssuer = false,
+            ValidateAudience = false
+        };
+    });
+builder.Services.AddAuthorization();
 
 // DB connection
-var config = builder.Configuration;
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(
         $"Host={config["DB_HOST"]};" +
@@ -33,6 +51,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapAuthEndpoints();
 app.MapProductsEndpoints();
 app.MapCartEndpoints();
