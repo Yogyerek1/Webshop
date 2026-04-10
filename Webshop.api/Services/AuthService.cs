@@ -57,7 +57,7 @@ public class AuthService(AppDbContext db, IConfiguration config, IHttpContextAcc
         await db.SaveChangesAsync();
 
         Console.WriteLine($"[LOGIN -> Verification] Email has been sent to ({user.Email}): {code}.");
-        return Results.Ok("Please, check your email. The verification has been sent.");
+        return Results.Ok("Please, check your email. The verification code has been sent.");
     }
 
     public async Task<IResult> Me()
