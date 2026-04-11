@@ -9,7 +9,7 @@ using Webshop.api.Models;
 
 namespace Webshop.api.Services;
 
-public class AuthService(AppDbContext db, IConfiguration config, IHttpContextAccessor httpContextAccessor)
+public class AuthService(AppDbContext db, IConfiguration config, IHttpContextAccessor httpContextAccessor, MailService mailService)
 {
     private HttpContext Context => httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext is not available.");
 
@@ -18,6 +18,8 @@ public class AuthService(AppDbContext db, IConfiguration config, IHttpContextAcc
         var code = new Random().Next(100000, 999999).ToString();
         user.VerifyCode = code;
         user.CodeExpiry = DateTime.UtcNow.AddMinutes(minutes);
+
+        await mailService.SendMailAsync(user.Email, "Verification Code", $"Your verification code is: <b>{code}</b>!");
 
         return code;
     }
@@ -162,6 +164,7 @@ public class AuthService(AppDbContext db, IConfiguration config, IHttpContextAcc
         switch (dto.Purpose)
         {
             case VerificationPurpose.Register:
+                if (user.IsVerified) return Results.BadRequest("This account is already verified.");
                 user.IsVerified = true;
                 await FinalizeVerification(user);
                 return Results.Ok("Account verified successful! You can now log in.");
