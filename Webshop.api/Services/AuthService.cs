@@ -143,6 +143,41 @@ public class AuthService(AppDbContext db, IConfiguration config, IHttpContextAcc
         return Results.Ok("Profile updated.");
     }
 
+    public async Task<IResult> ChangeUserRole(ChangeRoleDto dto)
+    {
+        var currentUserId = Context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var adminUser = await db.Users.FindAsync(int.Parse(currentUserId!));
+
+        if (adminUser is null || adminUser.Role != "SuperAdmin")
+            return Results.Json(new { message = "Forbidden: Only SuperAdmins can change roles." }, statusCode: 403);
+        
+        if (string.IsNullOrWhiteSpace(dto.Code))
+        {
+            string code = await SendCode(adminUser, 5);
+            await db.SaveChangesAsync();
+            Console.WriteLine($"[ROLE CHANGE -> 2FA] Code sent to SuperAdmin ({adminUser.Email}): {code}");
+            return Results.Ok("Verification code sent to your email. Please provide the code to confirm the role change.");
+        }
+
+        if (adminUser.VerifyCode != dto.Code || adminUser.CodeExpiry < DateTime.UtcNow)
+            return Results.BadRequest("Invalid or expired 2FA code.");
+
+        var targetUser = await db.Users.FirstOrDefaultAsync(u => u.Email == dto.TargetUserEmail);
+        if (targetUser is null) return Results.NotFound("Target user not found.");
+
+        if (dto.NewRole != "Admin" && dto.NewRole != "Customer" && dto.NewRole != "SuperAdmin")
+            return Results.BadRequest("Invalid role name.");
+
+
+        if (!targetUser.IsVerified) return Results.BadRequest("The target user is not verified.");
+         
+        targetUser.Role = dto.NewRole;
+
+        await FinalizeVerification(adminUser);
+
+        return Results.Ok($"User {targetUser.Email} role updated to {dto.NewRole} succesfully.");
+    }
+
     public IResult Logout()
     {
         Context.Response.Cookies.Delete("access_token", new CookieOptions

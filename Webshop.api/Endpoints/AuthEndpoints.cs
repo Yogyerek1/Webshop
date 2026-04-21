@@ -24,5 +24,8 @@ public static class AuthEndpoints
 
         app.MapGet("/auth/logout", (AuthService authService) => authService.Logout())
             .RequireAuthorization("CustomerLevel");
+        
+        app.MapPost("/auth/change-role", async (ChangeRoleDto dto, AuthService authService) => await authService.ChangeUserRole(dto))
+            .RequireAuthorization("SuperAdminOnly");
     }
 }
