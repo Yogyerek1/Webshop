@@ -6,7 +6,9 @@ public static class OrdersEndpoints
 {
     public static void MapOrdersEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapPost("/orders/checkout", () => {});
-        app.MapGet("/orders", () => {});
+        var group = app.MapGroup("/orders").RequireAuthorization("CustomerOnly");
+
+        group.MapPost("/checkout", () => {});
+        group.MapGet("/", () => {});
     }
 }

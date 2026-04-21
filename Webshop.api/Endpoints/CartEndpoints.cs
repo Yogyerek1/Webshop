@@ -6,8 +6,10 @@ public static class CartEndpoints
 {
     public static void MapCartEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/cart", () => {});
-        app.MapPost("/cart/items", () => {});
-        app.MapDelete("cart/items/{id}", (int id) => {});
+        var group = app.MapGroup("/cart").RequireAuthorization("CustomerOnly");
+
+        group.MapGet("/", () => {});
+        group.MapPost("/items", () => {});
+        group.MapDelete("/items/{id}", (int id) => {});
     }
 }

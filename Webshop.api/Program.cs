@@ -2,6 +2,7 @@ using System.Text;
 using dotenv.net;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Webshop.api.Endpoints;
 using Webshop.api.Models;
@@ -36,7 +37,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             }
         };
     });
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
+    options.AddPolicy("CustomerOnly", policy => policy.RequireRole("Admin", "Customer"));
+});
 
 // DB connection
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -52,6 +57,7 @@ builder.Services.AddValidation();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<MailService>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<ProductService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 

@@ -12,9 +12,17 @@ public static class AuthEndpoints
         app.MapPost("/auth/verify", async (VerifyDto dto, AuthService authService) => await authService.VerifyCode(dto));
         app.MapPost("/auth/forgot-password", async (ForgotPasswordDto dto, AuthService authService) => await authService.ForgotPassword(dto));
         app.MapPost("/auth/reset-password", async (ResetPasswordDto dto, AuthService authService) => await authService.ResetPassword(dto));
-        app.MapPost("/auth/request-update", async (AuthService authService) => await authService.RequestUpdateCode()).RequireAuthorization();
-        app.MapPut("/auth/update", async (UpdateUserDto dto, AuthService authService) => await authService.Update(dto)).RequireAuthorization();
-        app.MapPost("/auth/me", async (AuthService authService) => await authService.Me()).RequireAuthorization();
-        app.MapGet("/auth/logout", (AuthService authService) => authService.Logout()).RequireAuthorization();
+
+        app.MapPost("/auth/request-update", async (AuthService authService) => await authService.RequestUpdateCode())
+            .RequireAuthorization("CustomerOnly");
+
+        app.MapPut("/auth/update", async (UpdateUserDto dto, AuthService authService) => await authService.Update(dto))
+            .RequireAuthorization("CustomerOnly");
+
+        app.MapPost("/auth/me", async (AuthService authService) => await authService.Me())
+            .RequireAuthorization("CustomerOnly");
+
+        app.MapGet("/auth/logout", (AuthService authService) => authService.Logout())
+            .RequireAuthorization("CustomerOnly");
     }
 }
