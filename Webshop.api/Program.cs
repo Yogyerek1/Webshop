@@ -65,6 +65,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<MailService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<ProductService>();
+builder.Services.AddScoped<CartService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
