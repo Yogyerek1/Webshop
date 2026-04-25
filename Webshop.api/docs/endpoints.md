@@ -17,9 +17,9 @@ PRODUCTS (Catalog):
  - DELETE /products/{id} (Admin)
 
 CART (Shopping Cart):
- - GET /cart (Guest/User)
- - POST /cart/items (Guest/User)
- - DELETE /cart/items/{id} (Guest/user)
+ - GET /cart (User)
+ - POST /cart/items (User)
+ - DELETE /cart/items/{id} (user)
 
 ORDERS & PAYMENTS (Checkout):
  - POST /orders/checkout (User)
