@@ -12,14 +12,18 @@ namespace Webshop.api.Services;
 public class AuthService(AppDbContext db, IConfiguration config, IHttpContextAccessor httpContextAccessor, MailService mailService, HelperService helperService)
 {
     private HttpContext Context => httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext is not available.");
-
+    
     private async Task<string> SendCode(User user, int minutes)
     {
         var code = new Random().Next(100000, 999999).ToString();
         user.VerifyCode = code;
         user.CodeExpiry = DateTime.UtcNow.AddMinutes(minutes);
 
-        await mailService.SendMailAsync(user.Email, "Verification Code", $"Your verification code is: <b>{code}</b>!");
+        await mailService.SendMailWithTemplateAsync(user.Email, "Verification Code", "SecurityCode", new Dictionary<string, string>
+        {
+            { "Code", code },
+            { "Expiry", Convert.ToString(minutes) }
+        });
 
         return code;
     }
@@ -42,9 +46,6 @@ public class AuthService(AppDbContext db, IConfiguration config, IHttpContextAcc
 
         await db.SaveChangesAsync();
 
-        // email code
-        Console.WriteLine($"[REGISTRATION -> ACCOUNT VERIFICATION] Email sent to ({dto.Email}): {code}.");
-
         return Results.Ok("Registration successful! Please check your email to verify your account!");
     }
 
@@ -58,7 +59,6 @@ public class AuthService(AppDbContext db, IConfiguration config, IHttpContextAcc
 
         await db.SaveChangesAsync();
 
-        Console.WriteLine($"[LOGIN -> Verification] Email has been sent to ({user.Email}): {code}.");
         return Results.Ok("Please, check your email. The verification code has been sent.");
     }
 
@@ -88,8 +88,6 @@ public class AuthService(AppDbContext db, IConfiguration config, IHttpContextAcc
 
         await db.SaveChangesAsync();
 
-        Console.WriteLine($"[PASSWORD RESET -> VERIFICATION] Email sent to ({user.Email}): {code}.");
-
         return Results.Ok("If this email exists, a reset code has been sent.");
     }
 
@@ -104,26 +102,25 @@ public class AuthService(AppDbContext db, IConfiguration config, IHttpContextAcc
         user.Password = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
 
         await FinalizeVerification(user);
+
         return Results.Ok("Password has been reset successfully. You can now log in.");
     }
 
     public async Task<IResult> RequestUpdateCode()
     {
-        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == int.Parse(Context.User.FindFirst(ClaimTypes.NameIdentifier)!.Value));
+        var user = await helperService.GetUserAsync();
         if (user is null) return Results.NotFound("User not found.");
 
         string code = await SendCode(user, 5);
 
         await db.SaveChangesAsync();
 
-        Console.WriteLine($"[UPDATE PROFILE -> VERIFICATION] Code sent to ({user.Email}): {code}.");
-
         return Results.Ok("Verification code sent to your email.");
     }
 
     public async Task<IResult> Update(UpdateUserDto dto)
     {
-        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == int.Parse(Context.User.FindFirst(ClaimTypes.NameIdentifier)!.Value));
+        var user = await helperService.GetUserAsync();
         if (user is null) return Results.NotFound("User not found.");
 
         if (user.VerifyCode != dto.Code || user.CodeExpiry < DateTime.UtcNow) return Results.BadRequest("Invalid or expired verification code.");
@@ -140,14 +137,14 @@ public class AuthService(AppDbContext db, IConfiguration config, IHttpContextAcc
         if (!string.IsNullOrWhiteSpace(dto.Password)) user.Password = BCrypt.Net.BCrypt.HashPassword(dto.Password);
 
         await FinalizeVerification(user);
+
         return Results.Ok("Profile updated.");
     }
 
     public async Task<IResult> ChangeUserRole(ChangeRoleDto dto)
     {
-        var currentUser = await helperService.GetUserAsync();
-        if (currentUser is null) return Results.Unauthorized();
-        var adminUser = await db.Users.FindAsync(currentUser.Id);
+        var adminUser = await helperService.GetUserAsync();
+        if (adminUser is null) return Results.Unauthorized();
         var targetUser = await db.Users.FirstOrDefaultAsync(u => u.Email == dto.TargetUserEmail);
 
         if (adminUser is null || adminUser.Role != "SuperAdmin")
@@ -158,8 +155,9 @@ public class AuthService(AppDbContext db, IConfiguration config, IHttpContextAcc
         if (string.IsNullOrWhiteSpace(dto.Code))
         {
             string code = await SendCode(adminUser, 5);
+
             await db.SaveChangesAsync();
-            Console.WriteLine($"[ROLE CHANGE -> 2FA] Code sent to SuperAdmin ({adminUser.Email}): {code}");
+
             return Results.Ok("Verification code sent to your email. Please provide the code to confirm the role change.");
         }
 
@@ -168,12 +166,11 @@ public class AuthService(AppDbContext db, IConfiguration config, IHttpContextAcc
 
         if (targetUser is null) return Results.NotFound("Target user not found.");
 
+        if (!targetUser.IsVerified) return Results.BadRequest("The target user is not verified.");
+
         if (dto.NewRole != "Admin" && dto.NewRole != "Customer" && dto.NewRole != "SuperAdmin")
             return Results.BadRequest("Invalid role name.");
 
-
-        if (!targetUser.IsVerified) return Results.BadRequest("The target user is not verified.");
-         
         targetUser.Role = dto.NewRole;
 
         await FinalizeVerification(adminUser);

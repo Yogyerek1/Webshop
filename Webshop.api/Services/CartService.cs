@@ -40,22 +40,18 @@ public class CartService(AppDbContext db, HelperService helperService)
         var existingItem = await db.CartItems
             .FirstOrDefaultAsync(c => c.UserId == user.Id && c.ProductId == dto.ProductId);
         
-        if (existingItem != null)
+        if (existingItem != null) return Results.BadRequest($"{existingItem.Product.Name} is already exists in your cart.");
+
+        var cartItem = new CartItem
         {
-            existingItem.Quantity += dto.Quantity;
-        }
-        else
-        {
-            var cartItem = new CartItem
-            {
-                UserId = user.Id,
-                ProductId = dto.ProductId,
-                Quantity = dto.Quantity
-            };
-            db.CartItems.Add(cartItem);
-        }
+            UserId = user.Id,
+            ProductId = dto.ProductId,
+            Quantity = dto.Quantity
+        };
+        db.CartItems.Add(cartItem);
 
         await db.SaveChangesAsync();
+        
         return Results.Ok("Item added to cart.");
     }
 

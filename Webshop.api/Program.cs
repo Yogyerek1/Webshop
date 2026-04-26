@@ -4,13 +4,15 @@ using System.Text;
 using dotenv.net;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Webshop.api.Endpoints;
 using Webshop.api.Models;
 using Webshop.api.Services;
 
+// Load enviroment variables from .env file
 DotEnv.Load();
+
+// Disables legacy claim mapping to keep JWT names simple (e.g., 'role' instead of a URL)
 JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
 var builder = WebApplication.CreateBuilder(args);
@@ -43,6 +45,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+// Roles
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("SuperAdminOnly", policy => policy.RequireRole("SuperAdmin"));
@@ -60,6 +63,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         $"Password={config["DB_PASSWORD"]};"
     ));
 
+// Fixes infinite loops in JSON by ignoring circular references (e.g., Order <-> OrderItem)
 builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options =>
 {
     options.SerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
@@ -67,12 +71,15 @@ builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options =
 
 builder.Services.AddValidation();
 builder.Services.AddHttpContextAccessor();
+
+// Services
 builder.Services.AddScoped<HelperService>();
 builder.Services.AddScoped<MailService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<ProductService>();
 builder.Services.AddScoped<CartService>();
 builder.Services.AddScoped<OrderService>();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -84,8 +91,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+// Authentication
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Endpoints
 app.MapAuthEndpoints();
 app.MapProductsEndpoints();
 app.MapCartEndpoints();

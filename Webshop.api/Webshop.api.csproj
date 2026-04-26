@@ -23,6 +23,8 @@
     <Folder Include="DTOs/CartItemDTOs/" />
     <Folder Include="DTOs/OrderDTOs/" />
     <Folder Include="DTOs/ProductDTOs/" />
+    <Folder Include="Templates/" />
+    <Folder Include="Templates/Styles/" />
   </ItemGroup>
 
 </Project>

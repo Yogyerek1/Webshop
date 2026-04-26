@@ -111,6 +111,7 @@ public class OrderService(AppDbContext db, HelperService helperService)
             .FirstOrDefaultAsync();
         
         if (order is null) return Results.NotFound("Order not found.");
+
         return Results.Ok(order);
     }
 
@@ -154,6 +155,7 @@ public class OrderService(AppDbContext db, HelperService helperService)
         }
 
         using var transaction = await db.Database.BeginTransactionAsync();
+
         try
         {
             foreach (var item in order.OrderItems)
@@ -165,6 +167,7 @@ public class OrderService(AppDbContext db, HelperService helperService)
             }
 
             db.Orders.Remove(order);
+            
             await db.SaveChangesAsync();
             await transaction.CommitAsync();
 
