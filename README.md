@@ -69,7 +69,6 @@ dotnet ef database update
 Use Docker Compose to start the API and the Database in the background.
 
 ```bash
-# Use Docker Compose to start the API and the Database in the background.
 docker compose up -d
 ```
 
