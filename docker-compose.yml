@@ -1,0 +1,32 @@
+services:
+  nexus-db:
+    image: postgres:latest
+    container_name: nexus-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "${DB_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+
+  nexus-api:
+    build:
+      context: ./NexusCore.API
+      dockerfile: Dockerfile
+    container_name: nexus_api
+    restart: on-failure
+    env_file:
+      - .env
+    ports:
+      - "5000:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${APP_ENV}
+      - ConnectionStrings__DefaultConnection=Host=${DB_HOST};Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASSWORD}
+    depends_on:
+      - nexus-db
+
+volumes:
+  postgres_data:

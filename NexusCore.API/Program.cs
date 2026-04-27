@@ -10,7 +10,7 @@ using Webshop.api.Models;
 using Webshop.api.Services;
 
 // Load enviroment variables from .env file
-DotEnv.Load();
+DotEnv.Load(options: new DotEnvOptions(envFilePaths: new[] { "../.env" }));
 
 // Disables legacy claim mapping to keep JWT names simple (e.g., 'role' instead of a URL)
 JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
