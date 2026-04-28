@@ -43,12 +43,24 @@ public class OrderService(AppDbContext db, HelperService helperService)
                 
                 decimal discountedPrice = (item.Product.Price * (100m - item.Product.DiscountPercentage) / 100m);
 
-                orderItems.Add(new OrderItem
+                var existingOrderItem = existingOrder?.OrderItems
+                    .FirstOrDefault(oi => oi.ProductId == item.ProductId);
+                
+                if (existingOrder != null) existingOrderItem?.Quantity += item.Quantity;
+                else
                 {
-                    ProductId = item.ProductId,
-                    Quantity = item.Quantity,
-                    Price = discountedPrice
-                });
+                    var newItem = new OrderItem
+                    {
+                        ProductId = item.ProductId,
+                        Quantity = item.Quantity,
+                        Price = discountedPrice
+                    };
+                    
+                    if (existingOrder != null)
+                        existingOrder.OrderItems.Add(newItem);
+                    else
+                        orderItems.Add(newItem);
+                }
 
                 totalAmount += (item.Product.Price * (100m - item.Product.DiscountPercentage) / 100m) * item.Quantity;
             }
@@ -173,7 +185,7 @@ public class OrderService(AppDbContext db, HelperService helperService)
             await db.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            return Results.Ok(new { Message = $"The {Id}. order deleted." });
+            return Results.Ok(new { Message = $"Order deleted." });
         }
         catch (Exception ex)
         {
