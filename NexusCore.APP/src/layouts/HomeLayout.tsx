@@ -2,9 +2,9 @@ import { Outlet } from 'react-router-dom'
 
 const HomeLayout = () => {
     return (
-        <div>
+        <div className="min-w-screen min-h-screen">
             <div></div>
-            <main>
+            <main className="flex min-w-screen min-h-screen">
                 <Outlet />
             </main>
             <div></div>
