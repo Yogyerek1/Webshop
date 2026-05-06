@@ -1,4 +1,5 @@
 import type { HomePageProps } from "../../pages/HomePage";
+import type { NavBarProps } from "../../components/navigation/NavBar";
 
 export interface BaseSection {
     id: string;
@@ -19,9 +20,9 @@ export type HomePageType = {
 };
 
 export interface AppConfig {
+    navBar: NavBarProps;
     homePage: HomePageType;
     theme: {
         primaryColor: string;
-        showNavbar: boolean;
     };
 };
